@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">RecyclerViewTest</string>
+    <string name="deletebtn">Delete</string>
 </resources>
