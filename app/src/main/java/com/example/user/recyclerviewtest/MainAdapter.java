@@ -1,8 +1,7 @@
 package com.example.user.recyclerviewtest;
 
-
 import android.content.ContentValues;
-import android.content.Context;
+import android.content.Context;;
 import android.database.Cursor;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -18,9 +17,11 @@ public class MainAdapter extends RecyclerView.Adapter{
 
     private ArrayList<String> mdata;
     private LayoutInflater inflater;
-    public MainAdapter(Context context, ArrayList<String> mdata){
+    private Cursor mCursor;
+    public MainAdapter(Context context, ArrayList<String> mdata,Cursor cursor){
         inflater = LayoutInflater.from(context);
         this.mdata = mdata;
+        mCursor = cursor;
     }
 
     @NonNull
@@ -33,19 +34,29 @@ public class MainAdapter extends RecyclerView.Adapter{
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
 
-        ((ItemHolder)holder).textView.setText(mdata.get(position));
+        if(!mCursor.moveToPosition(position)){
+            return;
+        }
+
+        String name = mCursor.getString(mCursor.getColumnIndex(MainContract.MainEntry.COLUMN_NAME));
+        final long id = mCursor.getLong(mCursor.getColumnIndex(MainContract.MainEntry._ID));
+
+        ((ItemHolder)holder).textView.setText(name);
+        ((ItemHolder)holder).itemView.setTag(id);
 
         ((ItemHolder)holder).mbtn_delete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                DeleteItem(position);
+                MainActivity.DeleteItem(id,mdata);
+                notifyItemRemoved((int)id);
+                notifyItemRangeChanged(0, getItemCount());
             }
         });
     }
 
     @Override
     public int getItemCount() {
-        return mdata.size();
+        return mCursor.getCount();
     }
 
     public class ItemHolder extends RecyclerView.ViewHolder{
@@ -59,18 +70,15 @@ public class MainAdapter extends RecyclerView.Adapter{
         }
     }
 
-    public void AddItem(String task){
-        if(task.length() == 0)
-            return;
+    public void swapCursor(Cursor newCursor){
+        if(mCursor != null){
+            mCursor.close();
+        }
 
-        mdata.add(task);
-        notifyItemRangeChanged(0, getItemCount());
-    }
-
-    public void DeleteItem(int pos){
-        mdata.remove(pos);
-        notifyItemRemoved(pos);
-        notifyItemRangeChanged(0, getItemCount());
+        mCursor = newCursor;
+        if(newCursor != null){
+            notifyDataSetChanged();
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 package com.example.user.recyclerviewtest;
 
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -24,19 +25,20 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity{
 
-    SQLiteDatabase mDatebase;
-    MainAdapter mainAdapter;
+    static SQLiteDatabase mDatabase;
+    static MainAdapter mainAdapter;
     ArrayList<String>list;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         list = new ArrayList<>();
+        MainDBHelper dbHelper = new MainDBHelper(this);
+        mDatabase = dbHelper.getWritableDatabase();
 
         RecyclerView recyclerView = findViewById(R.id.RecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        mainAdapter = new MainAdapter(this,list);
+        mainAdapter = new MainAdapter(this,list,getAllItems());
         recyclerView.setAdapter(mainAdapter);
     }
 
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity{
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
                                     String task = String.valueOf(editTextTask.getText());
-                                    mainAdapter.AddItem(task);
+                                    AddItem(task);
                                 }
                             })
                             .setNegativeButton("Cancel",null)
@@ -73,5 +75,33 @@ public class MainActivity extends AppCompatActivity{
                 default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    public void AddItem(String task){
+        if(task.length() == 0)
+            return;
+
+        list.add(task);
+        ContentValues cv = new ContentValues();
+        cv.put(MainContract.MainEntry.COLUMN_NAME,task);
+        mDatabase.insert(MainContract.MainEntry.TABLE_NAME,null,cv);
+        mainAdapter.notifyItemRangeChanged(0, list.size());
+        mainAdapter.swapCursor(getAllItems());
+    }
+
+    public static void DeleteItem(long pos,ArrayList<String> list){
+        list.remove(pos);
+        mDatabase.delete(MainContract.MainEntry.TABLE_NAME,MainContract.MainEntry._ID + "=" + pos,null);
+        mainAdapter.swapCursor(getAllItems());
+    }
+
+    private static Cursor getAllItems(){
+        return mDatabase.query(MainContract.MainEntry.TABLE_NAME,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
     }
 }
